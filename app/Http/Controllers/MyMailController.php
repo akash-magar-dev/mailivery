@@ -11,18 +11,34 @@ use Illuminate\Support\Facades\File;
 use App\Models\MailHistroyModel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MyMailController extends Controller
 {
+    /**
+     * The application's mail attachement dir.
+     *
+     * @var string
+     */
     public static $mail_attachement_dir = 'mail_attachment/';
 
+    /**
+     * Display the compose mail view.
+     *
+     * @return \Illuminate\View\View
+     */
     public function index()
     {
-        // $users = User::all()->pluck('email')->toJson();
         $users = User::all()->pluck('email');
         return view('compose_mail', compact('users'));
     }
 
+    /**
+     * Handle an incoming send mail request.
+     *
+     * @param  \App\Http\Requests\Auth\LoginRequest  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function send_mail(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -32,7 +48,7 @@ class MyMailController extends Controller
             'cc_emails.*' => 'email',
             'subject' => 'required',
             'message' => 'required',
-            'attachment'=>'sometimes|required'
+            'attachment' => 'sometimes|required'
         ]);
 
         if ($validator->fails()) {
@@ -49,6 +65,9 @@ class MyMailController extends Controller
             ->cc(implode(',', $validated['to_emails']))
             ->send(new MyMail($validated));
 
+
+        Log::channel('maillog')->info('mail sent : '.json_encode($validated));
+
         $sent_mail = new MailHistroyModel();
         $sent_mail->to_recipient = implode(',', $validated['to_emails']);
         $sent_mail->cc_recipient = (@$validated['cc_emails'] ? implode(',', $validated['cc_emails']) : NULL);
@@ -59,16 +78,22 @@ class MyMailController extends Controller
         $sent_mail->save();
 
         return response()->json([
-            'status'=>TRUE,
-            'msg'=>'Mail send successfully'
+            'status' => TRUE,
+            'msg' => 'Mail send successfully'
         ]);
     }
 
+    /**
+     * Handle an incoming store attachment request.
+     *
+     * @param  \App\Http\Requests\Auth\LoginRequest  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store_attachment(Request $request)
     {
         $output_dir = public_path(self::$mail_attachement_dir);
         File::isDirectory($output_dir) or File::makeDirectory($output_dir, 0777, true, true);
-     
+
         $validator = Validator::make($request->all(), [
             'file' => 'required|mimes:jpeg,bmp,png,pdf|max:2000',
         ]);
@@ -80,67 +105,52 @@ class MyMailController extends Controller
         }
 
         $name = $request->file('file')->getClientOriginalName();
-        $fileName = pathinfo($name,PATHINFO_FILENAME); 
+        $fileName = pathinfo($name, PATHINFO_FILENAME);
         $ext = $request->file('file')->getClientOriginalExtension();
-        $uniquefileName = $fileName .'_'.time().'.'.$ext;
+        $uniquefileName = $fileName . '_' . time() . '.' . $ext;
         $upload = $request->file->move($output_dir, $uniquefileName);
         return response()->json($uniquefileName);
-
-        // if (isset($_FILES["myfile"])) {
-        //     $ret = array();
-
-        //     $error = $_FILES["myfile"]["error"];
-        //     //You need to handle  both cases
-        //     //If Any browser does not support serializing of multiple files using FormData() 
-        //     if (!is_array($_FILES["myfile"]["name"])) //single file
-        //     {
-        //         $fileName = $_FILES["myfile"]["name"];
-        //         move_uploaded_file($_FILES["myfile"]["tmp_name"], $output_dir . $fileName);
-        //         $ret[] = $fileName;
-        //     } else  //Multiple files, file[]
-        //     {
-        //         $fileCount = count($_FILES["myfile"]["name"]);
-        //         for ($i = 0; $i < $fileCount; $i++) {
-        //             $fileName = $_FILES["myfile"]["name"][$i];
-        //             move_uploaded_file($_FILES["myfile"]["tmp_name"][$i], $output_dir . $fileName);
-        //             $ret[] = $fileName;
-        //         }
-
-        //     }
-        //     echo json_encode($ret);
-        // }
     }
 
-    public function mail_histrory() {
-        $all_sent_mail = MailHistroyModel::orderBy('created_at', 'desc')->get();;
-        return view('mail_histrory',compact('all_sent_mail'));
+    /**
+     * Display the sent mail view.
+     * 
+     * @return \Illuminate\View\View
+     */
+    public function mail_histrory()
+    {
+        $all_sent_mail = MailHistroyModel::orderBy('created_at', 'desc')->get();
+        return view('mail_histrory', compact('all_sent_mail'));
     }
 
-    public function mail_detail($id) {
+    /**
+     * Display the mail detail view.
+     * 
+     * @param  $id
+     * @return \Illuminate\View\View
+     */
+    public function mail_detail($id)
+    {
         $mail_detail = MailHistroyModel::find($id);
         $attachement_dir = self::$mail_attachement_dir;
-        return view('mail_detail',compact('mail_detail','attachement_dir'));
+        return view('mail_detail', compact('mail_detail', 'attachement_dir'));
     }
 
-    public function dashboard(){
+    /**
+     * Display the dashboard view.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function mail_dashboard()
+    {
         $year = Carbon::now()->year;
-    
-        $data = MailHistroyModel::whereYear('created_at',$year)->get()->count();
         $monthly_mail = MailHistroyModel::
             select(DB::raw('count(id'))
             ->select(DB::raw('DATE_FORMAT(created_at, "%M") as formatted_dob'))
-            ->whereYear('created_at',$year)
+            ->whereYear('created_at', $year)
             ->get()
             ->groupBy('formatted_dob')->toarray();
-            // ->groupBy(function($val) {
-            //         return Carbon::parse($val->created_at)->format('m');
-            // })->toarray();
-        // select( "id" ,
-        //     DB::raw("(DATE_FORMAT(created_at, '%m-%Y')) as month_year")
-        // )
-        // ->orderBy('created_at')
-        // ->groupBy(DB::raw("DATE_FORMAT(created_at, '%m-%Y')"))
-        // ->get();
-        return view('dashboard' , compact('monthly_mail') );
+
+        return view('mail_dashboard', compact('monthly_mail'));
     }
 }

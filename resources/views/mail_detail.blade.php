@@ -32,7 +32,7 @@
             @foreach($attachment as $k=>$v)
             <li>
                 {{-- {{File::size(public_path('/'.$attachement_dir.$v))}} --}}
-                <a target="_blank" href="{{URL::to('/'.$attachement_dir.$v)}}"><span class="icon mdi mdi-attachment-alt"></span> {{$v}} </a>
+                <a target="_blank" class="text-underline" href="{{URL::to('/'.$attachement_dir.$v)}}"><span class="icon mdi mdi-attachment-alt"></span> {{$v}} </a>
             </li>
             @endforeach
         </ul>

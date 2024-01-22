@@ -41,7 +41,7 @@
     <div class="col-md-12 p-0">
         <div class="form-group">
             <label class="control-label sr-only" for="message">Descriptions </label>
-            <textarea class="form-control" id="message" name="editordata"></textarea>
+            <textarea class="form-control" id="message" name="editordata" placeholder="Enter message"></textarea>
             <p class="message_error error text-danger"></p>
         </div>
         <div>
@@ -67,7 +67,7 @@
     let $send_mail = '{{Route('sendmail')}}';
     let $upload_attchment = '{{Route('upload_attachment')}}';
     let editor;
-    let policy = /sex|shiit/;
+    let policy = /mad|shit/;
     fileupload = '';
     var attachment_data = [];
 

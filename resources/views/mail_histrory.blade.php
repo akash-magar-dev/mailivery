@@ -19,7 +19,7 @@
 </div>
 <hr>
 <div class="email-list">
-
+    @if(count($all_sent_mail) > 0)
     @foreach ($all_sent_mail as $mail)
     <a href="{{Route('mail_detail',['id'=>$mail->id])}}">
         <div class="email-list-item email-list-item">
@@ -35,6 +35,13 @@
         </div>
     </a>
     @endforeach
+    @else
+    <div style="min-height: 60vh;">
+        <div class="email-list-i tem email-list-item" >
+            <h1 class="mailivery">You have not send any mail now send it with mailivery </h1>
+        </div>
+    </div>
+    @endif
 </div>
 
 <script>
