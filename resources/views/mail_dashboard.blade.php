@@ -54,10 +54,46 @@ $chart_month_count = implode(",",array_values($months_data));
             </div>
 
         </div>
+
+        <hr>
+        <div class="card">
+            <h3 class="card-header mailivery text-center">Mail sent to per user</h3>
+            <div class="card_body p-3">
+                <table id="user_mail" class="table">
+                    <thead>
+                        <tr>
+                            <td>Email</td>
+                            <td>Total mail sent</td>
+                            <td>Action</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($all_user_mail_count as $k=>$v)
+                        <tr>
+                            
+                            <td>{{$k}}</td>
+                            <td>{{$v['mail_Sent']}}</td>
+                            <td><a class="btn btn-primary py-1 {{$v['mail_Sent']>0 ? '' : 'd-none'}}" href="{{Route('mail_histrory',['email'=>$k])}}">View mail <i class="fas fa-fw  fa-envelope"></i></a></td>
+                        </tr>
+                        @endforeach
+                    <tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
+            
+            
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css" />
+  
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    let table = new DataTable('#user_mail', {
+        // config options...
+    });
     $(function(){
         month = {!!json_encode($chart_month_count)!!};
         const ctx = document.getElementById('monthChart');

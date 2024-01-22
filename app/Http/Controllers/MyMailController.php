@@ -31,6 +31,7 @@ class MyMailController extends Controller
     {
         $users = User::all()->pluck('email');
         return view('compose_mail', compact('users'));
+        
     }
 
     /**
@@ -61,10 +62,15 @@ class MyMailController extends Controller
         // Retrieve the validated input...
         $validated = $validator->validated();
 
-        Mail::to(implode(',', $validated['to_emails']))
+        try{
+            Mail::to(implode(',', $validated['to_emails']))
             ->cc(implode(',', $validated['to_emails']))
             ->send(new MyMail($validated));
-
+        }catch(\Exception $e){
+            Log::channel('maillog')->error('mail fail : '.json_encode($validated));
+            Log::channel('maillog')->error('mail fail : '.json_encode($e->getMessage()));
+        }
+       
 
         Log::channel('maillog')->info('mail sent : '.json_encode($validated));
 
@@ -113,13 +119,18 @@ class MyMailController extends Controller
     }
 
     /**
-     * Display the sent mail view.
-     * 
+     * Display the sent mail list view.
+     * @param mixed $email
      * @return \Illuminate\View\View
      */
-    public function mail_histrory()
+    public function mail_histrory($email = null)
     {
-        $all_sent_mail = MailHistroyModel::orderBy('created_at', 'desc')->get();
+        if($email){
+            $all_sent_mail =MailHistroyModel::select('id','to_recipient','subject','created_at')
+            ->where('to_recipient', 'LIKE', '%'.$email.'%')->get();
+        }else{
+            $all_sent_mail = MailHistroyModel::orderBy('created_at', 'desc')->get();
+        }
         return view('mail_histrory', compact('all_sent_mail'));
     }
 
@@ -145,12 +156,23 @@ class MyMailController extends Controller
     {
         $year = Carbon::now()->year;
         $monthly_mail = MailHistroyModel::
-            select(DB::raw('count(id'))
+            select(DB::raw('count(id)'))
             ->select(DB::raw('DATE_FORMAT(created_at, "%M") as formatted_dob'))
             ->whereYear('created_at', $year)
             ->get()
             ->groupBy('formatted_dob')->toarray();
 
-        return view('mail_dashboard', compact('monthly_mail'));
+        $user = User::all();
+        $all_user_mail_count = [];
+        foreach($user as $k=>$v){
+            $user_mail_count = MailHistroyModel::
+            select(DB::raw('count(id) as mail_Sent'))
+            ->where('to_recipient','like', "%".$v->email."%")
+            // ->orwhere('cc_recipient','like', '%'.$v->email.'%')
+            ->get()->toarray();
+            $all_user_mail_count[$v->email] = $user_mail_count[0];
+        }
+
+        return view('mail_dashboard', compact('monthly_mail','all_user_mail_count'));
     }
 }
