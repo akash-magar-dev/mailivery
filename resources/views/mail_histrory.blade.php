@@ -20,21 +20,21 @@
 <hr>
 <div class="email-list">
     @if(count($all_sent_mail) > 0)
-    @foreach ($all_sent_mail as $mail)
-    <a href="{{Route('mail_detail',['id'=>$mail->id])}}">
-        <div class="email-list-item email-list-item">
-            <h6 class="search_target d-none">{{$mail->to_recipient}} {{$mail->to_recipient}} {{$mail->subject}}</h6>
-            <div class="email-list-detail">
-                <span class="date float-right">
-                    <span class="icon">
-                        <i class="fas fa-paperclip {{$mail->attachment ? : 'd-none'}}"></i>
-                    </span>{{$mail->created_at->format('d F')}}</span>
-                <span class="from">{{$mail->to_recipient}}</span>
-                <p class="msg font-weight-bold">{{$mail->subject}}</p>
-            </div>
-        </div>
-    </a>
-    @endforeach
+        @foreach ($all_sent_mail as $mail)
+            <a href="{{Route('mail_detail',['id'=>$mail->id])}}">
+                <div class="email-list-item email-list-item{{($mail->tracking_info)?'':'--unread' }}">
+                    <h6 class="search_target d-none">{{$mail->to_recipient}} {{$mail->to_recipient}} {{$mail->subject}}</h6>
+                    <div class="email-list-detail">
+                        <span class="date float-right">
+                            <span class="icon">
+                                <i class="fas fa-paperclip {{$mail->attachment ? : 'd-none'}}"></i>
+                            </span>{{$mail->created_at->format('d F')}}</span>
+                        <span class="from">{{$mail->to_recipient}}</span>
+                        <p class="msg font-weight-bold">{{$mail->subject}}</p>
+                    </div>
+                </div>
+            </a>
+        @endforeach
     @else
     <div style="min-height: 60vh;">
         <div class="email-list-i tem email-list-item" >

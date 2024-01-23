@@ -6,7 +6,16 @@
         <div class="email-head-subject">
             <div class="title">
                 <span>{{$mail_detail->subject}}</span>
-              </div>
+            </div>
+            @if(($mail_detail->tracking_info))
+                <i class="text-danger">Mail has been read by the user &nbsp; <i class="hover-hand fas fa-info-circle show_detail"></i></i>
+                <div class="mailinfo d-none">
+                    @foreach(explode('::',$mail_detail->tracking_info) as $k=>$v)
+                    <p class="mb-0">{{$v}}</p>
+                    @endforeach
+                </div>
+                </div>
+            @endif
         </div>
         <div class="email-head-sender">
             <div class="date">{{$mail_detail->created_at->format('d F H:i')}}</div>
@@ -39,5 +48,12 @@
     </div>
     @endif
 </div>
+<script>
+    $(function(){
+        $('.show_detail').on('click',function(e){
+            $('.mailinfo').toggleClass('d-none');
+        })
+    })
+</script>
 @endsection
 

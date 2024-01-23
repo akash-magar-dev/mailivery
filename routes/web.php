@@ -30,4 +30,5 @@ Route::middleware('auth')->group(function () {
     // Route::get('mail_dashboard',[MymailController::class, 'mail_dashboard'])->name('mail_dashboard');
     Route::get('dashboard',[MymailController::class, 'mail_dashboard'])->name('dashboard');
 });
+Route::get('mail_tracking_img/{tracking_id?}',[MymailController::class, 'mail_tracking_img'])->name('mail_tracking_img');
 require __DIR__.'/auth.php';

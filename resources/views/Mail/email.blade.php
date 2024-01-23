@@ -7,6 +7,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     </head>
     <body>
+        <img src="{{route('mail_tracking_img', ['tracking_id'=>$mail_data['tracking_id']] )}} " style="size: 1px;width:1px;display:none;">
         {!! $mail_data['message'] !!}
     </body>
 </html>

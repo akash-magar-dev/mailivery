@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('subject');
             $table->longText('message');
             $table->string('attachment')->nullable();
+            $table->longText('tracking_id')->nullable();
+            $table->longText('tracking_info')->nullable();
             $table->timestamps();
         });
     }

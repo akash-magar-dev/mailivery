@@ -51,6 +51,9 @@
     .min-view{
         min-height: calc(100vh - 120px) !important;
     }
+    .hover-hand:hover{
+        cursor: pointer;
+    }
 
 </style>
 </head>

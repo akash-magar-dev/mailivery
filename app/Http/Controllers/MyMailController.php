@@ -31,13 +31,12 @@ class MyMailController extends Controller
     {
         $users = User::all()->pluck('email');
         return view('compose_mail', compact('users'));
-        
     }
 
     /**
      * Handle an incoming send mail request.
      *
-     * @param  \App\Http\Requests\Auth\LoginRequest  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function send_mail(Request $request)
@@ -61,18 +60,23 @@ class MyMailController extends Controller
 
         // Retrieve the validated input...
         $validated = $validator->validated();
-
-        try{
+        $tracking_id = Carbon::now()->timestamp;
+        $validated['tracking_id'] = $tracking_id;
+        try {
             Mail::to(implode(',', $validated['to_emails']))
-            ->cc(implode(',', $validated['to_emails']))
-            ->send(new MyMail($validated));
-        }catch(\Exception $e){
-            Log::channel('maillog')->error('mail fail : '.json_encode($validated));
-            Log::channel('maillog')->error('mail fail : '.json_encode($e->getMessage()));
+                ->cc(implode(',', $validated['to_emails']))
+                ->send(new MyMail($validated));
+        } catch (\Exception $e) {
+            Log::channel('maillog')->error('mail fail : ' . json_encode($validated));
+            Log::channel('maillog')->error('mail fail : ' . json_encode($e->getMessage()));
+            return response()->json([
+                'status' => false,
+                'msg' => 'Unable to Mail please try again later'
+            ]);
         }
-       
 
-        Log::channel('maillog')->info('mail sent : '.json_encode($validated));
+
+        Log::channel('maillog')->info('mail sent : ' . json_encode($validated));
 
         $sent_mail = new MailHistroyModel();
         $sent_mail->to_recipient = implode(',', $validated['to_emails']);
@@ -80,6 +84,7 @@ class MyMailController extends Controller
         $sent_mail->subject = $validated['subject'];
         $sent_mail->message = htmlspecialchars($validated['message']);
         $sent_mail->attachment = (@$validated['attachment'] ? implode(',', $validated['attachment']) : NULL);
+        $sent_mail->tracking_id = $validated['tracking_id'];
 
         $sent_mail->save();
 
@@ -92,7 +97,7 @@ class MyMailController extends Controller
     /**
      * Handle an incoming store attachment request.
      *
-     * @param  \App\Http\Requests\Auth\LoginRequest  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store_attachment(Request $request)
@@ -125,10 +130,10 @@ class MyMailController extends Controller
      */
     public function mail_histrory($email = null)
     {
-        if($email){
-            $all_sent_mail =MailHistroyModel::select('id','to_recipient','subject','created_at')
-            ->where('to_recipient', 'LIKE', '%'.$email.'%')->get();
-        }else{
+        if ($email) {
+            $all_sent_mail = MailHistroyModel::select('id', 'to_recipient', 'subject', 'created_at','tracking_info')
+                ->where('to_recipient', 'LIKE', '%' . $email . '%')->get();
+        } else {
             $all_sent_mail = MailHistroyModel::orderBy('created_at', 'desc')->get();
         }
         return view('mail_histrory', compact('all_sent_mail'));
@@ -137,7 +142,7 @@ class MyMailController extends Controller
     /**
      * Display the mail detail view.
      * 
-     * @param  $id
+     * @param int $id
      * @return \Illuminate\View\View
      */
     public function mail_detail($id)
@@ -164,15 +169,35 @@ class MyMailController extends Controller
 
         $user = User::all();
         $all_user_mail_count = [];
-        foreach($user as $k=>$v){
+        foreach ($user as $k => $v) {
             $user_mail_count = MailHistroyModel::
-            select(DB::raw('count(id) as mail_Sent'))
-            ->where('to_recipient','like', "%".$v->email."%")
-            // ->orwhere('cc_recipient','like', '%'.$v->email.'%')
-            ->get()->toarray();
+                select(DB::raw('count(id) as mail_Sent'))
+                ->where('to_recipient', 'like', "%" . $v->email . "%")
+                // ->orwhere('cc_recipient','like', '%'.$v->email.'%')
+                ->get()->toarray();
             $all_user_mail_count[$v->email] = $user_mail_count[0];
         }
 
-        return view('mail_dashboard', compact('monthly_mail','all_user_mail_count'));
+        return view('mail_dashboard', compact('monthly_mail', 'all_user_mail_count'));
+    }
+
+    /**
+     * send tracking image to email
+     * and store server info for that email in db based on tracking id
+     * 
+     * @param  \Illuminate\Http\Request  $request
+     * @param mixed $tracking_id
+     * @return \Illuminate\Http\Response
+     */
+    public function mail_tracking_img(Request $request, $tracking_id)
+    {
+        $email = MailHistroyModel::where('tracking_id', $tracking_id)
+            ->update([
+                'tracking_info' =>
+                    $request->server('HTTP_USER_AGENT') .
+                    '::platform = '.$request->server('HTTP_SEC_CH_UA_PLATFORM') .
+                    '::ip = '.$request->ip()
+            ]);
+        return response()->file(public_path('assets/images/1pximg.png'));
     }
 }
